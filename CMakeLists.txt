@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(crau-nbd
     VERSION 0.1.0
     DESCRIPTION "Linux Network Block Device server for ChromeOS/Android CrAU payload.bin"
-    HOMEPAGE_URL "https://github.com/BlissRoms/crau-nbd"
+    HOMEPAGE_URL "https://github.com/shadichy/crau-nbd"
     LANGUAGES CXX C
 )
 
@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(GNUInstallDirs)
+
 option(BUILD_STATIC "Build statically linked executable" OFF)
 if(BUILD_STATIC)
     set(BUILD_SHARED_LIBS OFF)
@@ -19,7 +20,6 @@ if(BUILD_STATIC)
     set(PKG_CONFIG_USE_STATIC_LIBS ON)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
-
 
 # GNU and POSIX feature test macros
 add_compile_definitions(_GNU_SOURCE _POSIX_C_SOURCE=200809L)
@@ -31,12 +31,18 @@ endif()
 
 # Dependencies
 find_package(Threads REQUIRED)
+find_package(BZip2 REQUIRED)
+find_package(LibLZMA REQUIRED)
 find_package(Protobuf REQUIRED)
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig QUIET)
 
-pkg_check_modules(PROTOBUF REQUIRED IMPORTED_TARGET protobuf)
-pkg_check_modules(LZMA REQUIRED IMPORTED_TARGET liblzma)
-pkg_check_modules(BZ2 REQUIRED IMPORTED_TARGET bzip2)
+set(EXTRA_LIBS "")
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(PROTOBUF_PC protobuf)
+    if(PROTOBUF_PC_FOUND)
+        set(EXTRA_LIBS ${PROTOBUF_PC_LIBRARIES})
+    endif()
+endif()
 
 # Generate Protobuf C++ sources
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS proto/update_metadata.proto)
@@ -60,13 +66,16 @@ target_include_directories(crau-nbd PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS}
+    ${BZIP2_INCLUDE_DIR}
+    ${LIBLZMA_INCLUDE_DIRS}
 )
 
 target_link_libraries(crau-nbd PRIVATE
-    PkgConfig::PROTOBUF
+    ${EXTRA_LIBS}
+    protobuf::libprotobuf
     Threads::Threads
-    PkgConfig::LZMA
-    PkgConfig::BZ2
+    LibLZMA::LibLZMA
+    BZip2::BZip2
 )
 
 # Automated test runner
@@ -86,13 +95,16 @@ target_include_directories(test_reader PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS}
+    ${BZIP2_INCLUDE_DIR}
+    ${LIBLZMA_INCLUDE_DIRS}
 )
 
 target_link_libraries(test_reader PRIVATE
-    PkgConfig::PROTOBUF
+    ${EXTRA_LIBS}
+    protobuf::libprotobuf
     Threads::Threads
-    PkgConfig::LZMA
-    PkgConfig::BZ2
+    LibLZMA::LibLZMA
+    BZip2::BZip2
 )
 
 enable_testing()

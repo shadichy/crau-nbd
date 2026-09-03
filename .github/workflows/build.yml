@@ -68,7 +68,7 @@ jobs:
             ninja \
             pkgconf \
             protobuf-dev \
-            protobuf-compiler \
+            protobuf-static \
             xz-dev \
             xz-static \
             bzip2-dev \
@@ -95,8 +95,7 @@ jobs:
       - name: Verify static linkage
         run: |
           file build-static/crau-nbd
-          # Ensure truly statically linked
-          file build-static/crau-nbd | grep "statically linked"
+          file build-static/crau-nbd | grep -i "statically linked"
           ./build-static/crau-nbd --version
           ./build-static/crau-nbd --help
 
