@@ -68,7 +68,6 @@ jobs:
             ninja \
             pkgconf \
             protobuf-dev \
-            protobuf-static \
             xz-dev \
             xz-static \
             bzip2-dev \
