@@ -13,7 +13,7 @@ It is developed in strict accordance with the **[GNU Coding Standards](https://w
 * **Deflate Rejection & `mount-zip` Integration**: Complies with GNU diagnostics by cleanly identifying deflated outer archives and instructing users to mount them via [google/mount-zip](https://github.com/google/mount-zip).
 * **High-Speed Decompression**: Multi-threaded extent streaming supporting `REPLACE` (raw), `REPLACE_XZ` (LZMA via `liblzma`), and `REPLACE_BZ` (bzip2 via `libbz2`).
 * **LRU Block Cache**: In-memory cache for 4KB filesystem reads, drastically reducing read amplification during kernel filesystem metadata traversal (`ext4` and `erofs`).
-* **PolicyKit (`pkexec`) Integration**: Full support for supervised privilege elevation.
+* **PolicyKit (`sudo`) Integration**: Full support for supervised privilege elevation.
 
 ---
 
@@ -48,19 +48,19 @@ sudo modprobe nbd
 # 2. List partitions inside the OTA package (unprivileged)
 crau-nbd list lineage-21.0-x86_64-signed.zip
 
-# 3. Attach system partition to /dev/nbd0 using pkexec (supervised elevation)
-pkexec crau-nbd attach -d /dev/nbd0 -p system lineage-21.0-x86_64-signed.zip &
+# 3. Attach system partition to /dev/nbd0 using sudo (supervised elevation)
+sudo crau-nbd attach -d /dev/nbd0 -p system lineage-21.0-x86_64-signed.zip &
 
 # 4. Mount partition read-only
-pkexec mkdir -p /mnt/system
-pkexec mount -o ro /dev/nbd0 /mnt/system
+sudo mkdir -p /mnt/system
+sudo mount -o ro /dev/nbd0 /mnt/system
 
 # 5. Inspect contents
 cat /mnt/system/system/build.prop
 
 # 6. Unmount and detach cleanly
-pkexec umount /mnt/system
-pkexec crau-nbd detach -d /dev/nbd0
+sudo umount /mnt/system
+sudo crau-nbd detach -d /dev/nbd0
 ```
 
 ---
