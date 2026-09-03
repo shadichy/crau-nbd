@@ -1,0 +1,33 @@
+Installation Instructions for crau-nbd
+======================================
+
+Prerequisites
+-------------
+To build and run crau-nbd, you need:
+- A C++20 compliant compiler (g++ 13+ or clang++ 16+)
+- CMake 3.20+
+- GNU Make or Ninja
+- Protobuf compiler (protoc) and C++ development libraries
+- liblzma development headers (xz)
+- libbz2 development headers (bzip2)
+- Linux kernel with NBD support (modprobe nbd)
+- polkit (for pkexec privilege elevation)
+
+Building from Source
+--------------------
+To configure and compile crau-nbd:
+
+  $ cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+  $ cmake --build build -j$(nproc)
+
+Running Tests
+-------------
+To execute the automated test suite:
+
+  $ ctest --test-dir build --output-on-failure
+
+Installation
+------------
+To install the binary and manual page into the designated prefix:
+
+  $ sudo make -C build install

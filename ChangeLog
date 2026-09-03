@@ -1,0 +1,10 @@
+2026-09-03  Shadichy  <shadichy@blissos.org>
+
+	* src/main.cpp: Initial implementation of CLI conforming to GNU
+	Coding Standards and IEEE Std 1003.1.
+	* src/nbd_server.cpp: Implement Linux kernel NBD ioctl bridge.
+	* src/source_provider.cpp: Implement stored-zip and raw file readers.
+	* src/crau_parser.cpp: Implement CrAU v2 protobuf parser.
+	* src/extent_index.cpp: Implement O(log N) extent lookup table.
+	* src/decompressor.cpp: Implement multi-format block decompressor.
+	* src/block_cache.cpp: Implement thread-safe LRU block cache.

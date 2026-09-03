@@ -1,0 +1,53 @@
+.TH CRAU-NBD 1 "September 2026" "crau-nbd 0.1.0" "User Commands"
+.SH NAME
+crau-nbd \- Linux Network Block Device server for CrAU v2 payload.bin images
+.SH SYNOPSIS
+.B crau-nbd
+[\fIOPTION\fR]... \fICOMMAND\fR [\fIFILE\fR]
+.SH DESCRIPTION
+.B crau-nbd
+is a high-performance Network Block Device daemon that allows read-only
+block-level access to individual partitions (such as \fIsystem\fR, \fIvendor\fR,
+or \fIboot\fR) stored inside Android or ChromeOS OTA \fBpayload.bin\fR images
+without extracting the partition images to disk.
+.PP
+When passed an uncompressed (Stored) OTA \fB.zip\fR archive, \fBcrau-nbd\fR
+automatically identifies the entry offset of \fBpayload.bin\fR and seeks
+directly into the archive using zero-copy POSIX \fBpread\fR(2) calls.
+.SH COMMANDS
+.TP
+\fBlist\fR \fIFILE\fR
+Inspect the payload manifest, listing partition names, logical sizes, block counts,
+and extent compression operation statistics.
+.TP
+\fBattach\fR \fB\-d\fR \fIDEV\fR \fB\-p\fR \fIPART\fR \fIFILE\fR
+Attach the specified partition \fIPART\fR to the NBD block device node \fIDEV\fR.
+.TP
+\fBdetach\fR \fB\-d\fR \fIDEV\fR
+Disconnect and release the specified NBD device.
+.SH OPTIONS
+.TP
+\fB\-d\fR, \fB\-\-device\fR=\fIDEV\fR
+Target Linux NBD block device node (e.g. \fI/dev/nbd0\fR).
+.TP
+\fB\-p\fR, \fB\-\-partition\fR=\fINAME\fR
+Name of the partition to map (e.g. \fIsystem\fR, \fIvendor\fR, \fIboot\fR).
+.TP
+\fB\-c\fR, \fB\-\-cache-size\fR=\fIMB\fR
+Size of the in-memory LRU block cache in megabytes. Default is 128 MB.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Enable detailed diagnostic and block I/O tracing.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Display help summary and exit.
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Output version information and exit.
+.SH STANDARDS CONFORMANCE
+This program conforms strictly to IEEE Std 1003.1 (POSIX.1) and the GNU Coding Standards.
+.SH AUTHOR
+Written by Shadichy and the Bliss OS Team.
+.SH COPYRIGHT
+Copyright \(co 2026 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.

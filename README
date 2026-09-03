@@ -1,0 +1,11 @@
+crau-nbd -- Linux Network Block Device server for CrAU v2 payload.bin
+
+crau-nbd is a high-performance Linux Network Block Device (NBD) daemon
+that maps and mounts partitions (read-only) inside ChromeOS and Android
+OTA payload.bin images with zero intermediate disk extraction.
+
+It strictly adheres to:
+- IEEE Std 1003.1 (POSIX.1) Base Specifications
+- GNU Coding Standards (https://www.gnu.org/prep/standards/standards.html)
+
+For full documentation, refer to README.md or the manual page crau-nbd(1).

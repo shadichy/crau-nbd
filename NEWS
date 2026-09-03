@@ -1,0 +1,17 @@
+crau-nbd NEWS -- history of user-visible changes.
+
+* Noteworthy changes in release 0.1.0 (2026-09-03) [initial release]
+
+** New features
+
+  - Initial release of crau-nbd: A Linux Network Block Device (NBD) daemon
+    for direct, read-only block mounting of partitions inside Android and
+    ChromeOS CrAU v2 payload.bin images.
+  - Supports zero-scratch direct seeking on uncompressed (Stored) OTA ZIP
+    archives, eliminating multi-gigabyte disk extraction.
+  - Adheres strictly to IEEE Std 1003.1 (POSIX.1) and GNU Coding Standards.
+  - Clean rejection of deflated ZIP containers with diagnostic instructions
+    directing users to mount-zip.
+  - Multi-threaded streaming decompression for REPLACE_XZ (LZMA), REPLACE_BZ
+    (bzip2), and REPLACE (raw extents) with LRU chunk caching.
+  - PolicyKit (pkexec) integration for supervised execution on desktop systems.
