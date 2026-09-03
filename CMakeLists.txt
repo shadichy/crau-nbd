@@ -12,6 +12,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(GNUInstallDirs)
+option(BUILD_STATIC "Build statically linked executable" OFF)
+if(BUILD_STATIC)
+    set(BUILD_SHARED_LIBS OFF)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    set(PKG_CONFIG_USE_STATIC_LIBS ON)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+endif()
+
 
 # GNU and POSIX feature test macros
 add_compile_definitions(_GNU_SOURCE _POSIX_C_SOURCE=200809L)

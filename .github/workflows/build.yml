@@ -1,0 +1,136 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-glibc:
+    name: Build (glibc x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            g++ \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libprotobuf-dev \
+            protobuf-compiler \
+            liblzma-dev \
+            libbz2-dev
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -G Ninja
+
+      - name: Compile crau-nbd
+        run: |
+          cmake --build build -j$(nproc)
+          strip build/crau-nbd
+
+      - name: Verify binary
+        run: |
+          file build/crau-nbd
+          ldd build/crau-nbd || true
+          ./build/crau-nbd --version
+          ./build/crau-nbd --help
+
+      - name: Upload glibc binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: crau-nbd-x86_64-glibc
+          path: build/crau-nbd
+
+  build-musl-static:
+    name: Build (musl-static x86_64)
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:edge
+    steps:
+      - name: Install build tools and libraries
+        run: |
+          apk update
+          apk add --no-cache \
+            build-base \
+            cmake \
+            ninja \
+            pkgconf \
+            protobuf-dev \
+            protobuf-compiler \
+            xz-dev \
+            xz-static \
+            bzip2-dev \
+            bzip2-static \
+            linux-headers \
+            git \
+            file
+
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Configure CMake (Static Build)
+        run: |
+          cmake -B build-static -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_STATIC=ON \
+            -G Ninja
+
+      - name: Compile crau-nbd (static)
+        run: |
+          cmake --build build-static -j$(nproc)
+          strip build-static/crau-nbd
+
+      - name: Verify static linkage
+        run: |
+          file build-static/crau-nbd
+          # Ensure truly statically linked
+          file build-static/crau-nbd | grep "statically linked"
+          ./build-static/crau-nbd --version
+          ./build-static/crau-nbd --help
+
+      - name: Upload musl-static binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: crau-nbd-x86_64-musl-static
+          path: build-static/crau-nbd
+
+  release:
+    name: Create GitHub Release
+    needs: [build-glibc, build-musl-static]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Package release binaries
+        run: |
+          mkdir -p release-assets
+          cp crau-nbd-x86_64-glibc/crau-nbd release-assets/crau-nbd-x86_64-glibc
+          cp crau-nbd-x86_64-musl-static/crau-nbd release-assets/crau-nbd-x86_64-musl-static
+          chmod +x release-assets/*
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/crau-nbd-x86_64-glibc
+            release-assets/crau-nbd-x86_64-musl-static
+            release-assets/SHA256SUMS.txt
+          generate_release_notes: true

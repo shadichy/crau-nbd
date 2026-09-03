@@ -45,6 +45,9 @@ error_dialog() {
 detach_all() {
     FOUND=0
     USER_NAME="${USER:-$(id -un)}"
+    USER_ID="$(id -u)"
+
+    # 1. Unmount and detach active crau-nbd mount points
     for MNT in "/run/media/$USER_NAME"/crau-nbd-* /tmp/crau-nbd-*; do
         if [ -d "$MNT" ]; then
             DEV="$(findmnt -n -o SOURCE "$MNT" 2>/dev/null || true)"
@@ -59,6 +62,15 @@ detach_all() {
             fi
         fi
     done
+
+    # 2. Unmount any active mount-zip auxiliary mounts
+    for ZMNT in "/run/user/$USER_ID"/crau-nbd-zip-* /tmp/crau-nbd-zip-*; do
+        if [ -d "$ZMNT" ]; then
+            fusermount -u "$ZMNT" 2>/dev/null || umount "$ZMNT" 2>/dev/null || true
+            rmdir "$ZMNT" 2>/dev/null || true
+        fi
+    done
+
     if [ "$FOUND" -eq 0 ]; then
         notify "CrAU-NBD" "No active CrAU-NBD mounts found."
     fi
@@ -97,23 +109,57 @@ if [ ! -e /dev/nbd0 ]; then
     }
 fi
 
+ZIP_FUSE_MOUNT=""
+
+# Test listing partitions from target
 LIST_OUTPUT=""
 if ! LIST_OUTPUT="$("$CRAU_NBD_BIN" list "$TARGET_FILE" 2>&1)"; then
     case "$LIST_OUTPUT" in
         *"compressed (method"*"!= STORED)"*)
-            error_dialog "The 'payload.bin' inside this ZIP archive is compressed (deflated).
+            # Deflated zip detected: check if mount-zip is available
+            if command -v mount-zip >/dev/null 2>&1; then
+                notify "CrAU-NBD" "Deflated ZIP detected. Mounting container with mount-zip..."
+                USER_ID="$(id -u)"
+                ZIP_FUSE_MOUNT="/run/user/$USER_ID/crau-nbd-zip-$$"
+                mkdir -p "$ZIP_FUSE_MOUNT"
+                if ! mount-zip "$TARGET_FILE" "$ZIP_FUSE_MOUNT"; then
+                    rmdir "$ZIP_FUSE_MOUNT" 2>/dev/null || true
+                    error_dialog "Failed to mount ZIP container with mount-zip."
+                    exit 1
+                fi
+
+                VIRT_PAYLOAD="$ZIP_FUSE_MOUNT/payload.bin"
+                if [ ! -f "$VIRT_PAYLOAD" ]; then
+                    fusermount -u "$ZIP_FUSE_MOUNT" 2>/dev/null || true
+                    rmdir "$ZIP_FUSE_MOUNT" 2>/dev/null || true
+                    error_dialog "No 'payload.bin' found inside the mounted ZIP container."
+                    exit 1
+                fi
+                TARGET_FILE="$VIRT_PAYLOAD"
+                if ! LIST_OUTPUT="$("$CRAU_NBD_BIN" list "$TARGET_FILE" 2>&1)"; then
+                    fusermount -u "$ZIP_FUSE_MOUNT" 2>/dev/null || true
+                    rmdir "$ZIP_FUSE_MOUNT" 2>/dev/null || true
+                    error_dialog "Failed to inspect payload.bin inside mounted zip:
+$LIST_OUTPUT"
+                    exit 1
+                fi
+            else
+                error_dialog "The 'payload.bin' inside this ZIP archive is compressed (deflated).
 
 Deflated ZIP archives do not support random block access.
 
-Please mount the archive using 'mount-zip' first:
-    mount-zip <archive.zip> /mnt/zip
-Then open payload.bin with CrAU-NBD."
+Please install 'mount-zip' (optional dependency) to mount deflated archives automatically:
+    pacman -S mount-zip  (or build from AUR)
+
+Alternatively, extract payload.bin first."
+                exit 1
+            fi
             ;;
         *)
             error_dialog "$LIST_OUTPUT"
+            exit 1
             ;;
     esac
-    exit 1
 fi
 
 NBD_DEV=""
@@ -129,11 +175,11 @@ for i in $(seq 0 15); do
 done
 
 if [ -z "$NBD_DEV" ]; then
+    [ -n "$ZIP_FUSE_MOUNT" ] && fusermount -u "$ZIP_FUSE_MOUNT" 2>/dev/null && rmdir "$ZIP_FUSE_MOUNT" 2>/dev/null || true
     error_dialog "No free NBD block devices available (/dev/nbd0 - /dev/nbd15 are all in use)."
     exit 1
 fi
 
-# Build list of partitions
 PART_ROWS=""
 SELECTED_PART=""
 
@@ -160,6 +206,7 @@ if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
         CMD="zenity --list --radiolist --title="CrAU-NBD: Select Partition" --text="Choose a partition to mount from $(basename "$TARGET_FILE"):" --column="Select" --column="Partition" --column="Size" $PART_ROWS --width=450 --height=320"
         SELECTED_PART="$(eval "$CMD" 2>/dev/null || true)"
         if [ -z "$SELECTED_PART" ]; then
+            [ -n "$ZIP_FUSE_MOUNT" ] && fusermount -u "$ZIP_FUSE_MOUNT" 2>/dev/null && rmdir "$ZIP_FUSE_MOUNT" 2>/dev/null || true
             exit 0
         fi
     fi
@@ -174,6 +221,7 @@ if [ -z "$SELECTED_PART" ]; then
 fi
 
 if [ -z "$SELECTED_PART" ]; then
+    [ -n "$ZIP_FUSE_MOUNT" ] && fusermount -u "$ZIP_FUSE_MOUNT" 2>/dev/null && rmdir "$ZIP_FUSE_MOUNT" 2>/dev/null || true
     error_dialog "Could not find any mountable partitions in $TARGET_FILE."
     exit 1
 fi
@@ -199,6 +247,7 @@ done
 
 if [ "$READY" -ne 1 ]; then
     ERR_LOG="$(cat "$LOG_FILE" 2>/dev/null || echo "Unknown error")"
+    [ -n "$ZIP_FUSE_MOUNT" ] && fusermount -u "$ZIP_FUSE_MOUNT" 2>/dev/null && rmdir "$ZIP_FUSE_MOUNT" 2>/dev/null || true
     error_dialog "Failed to attach $SELECTED_PART to $NBD_DEV:
 $ERR_LOG"
     exit 1
@@ -206,6 +255,7 @@ fi
 
 if ! pkexec mount -o ro "$NBD_DEV" "$MOUNT_DIR"; then
     pkexec "$CRAU_NBD_BIN" detach -d "$NBD_DEV" 2>/dev/null || true
+    [ -n "$ZIP_FUSE_MOUNT" ] && fusermount -u "$ZIP_FUSE_MOUNT" 2>/dev/null && rmdir "$ZIP_FUSE_MOUNT" 2>/dev/null || true
     error_dialog "Failed to mount $NBD_DEV to $MOUNT_DIR."
     exit 1
 fi
