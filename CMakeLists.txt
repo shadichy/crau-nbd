@@ -61,19 +61,6 @@ target_link_libraries(crau-nbd PRIVATE
     PkgConfig::BZ2
 )
 
-# Installation targets conforming to GNU standards
-install(TARGETS crau-nbd
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-
-install(FILES doc/crau-nbd.1
-    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
-)
-
-install(FILES data/polkit/org.blissos.craunbd.policy
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/polkit-1/actions
-)
-
 # Automated test runner
 add_executable(test_reader
     tests/test_reader.cpp
@@ -102,3 +89,29 @@ target_link_libraries(test_reader PRIVATE
 
 enable_testing()
 add_test(NAME test_reader COMMAND test_reader /home/shadichy/Downloads/lineage-21.0-20260331-UNOFFICIAL-x86_64_tv_go-signed.zip)
+
+# Installation targets conforming to GNU and FreeDesktop standards
+install(TARGETS crau-nbd
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(PROGRAMS scripts/crau-nbd-mount.sh
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+    RENAME crau-nbd-mount
+)
+
+install(FILES doc/crau-nbd.1
+    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
+)
+
+install(FILES data/polkit/org.blissos.craunbd.policy
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/polkit-1/actions
+)
+
+install(FILES data/desktop/org.blissos.craunbd.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+
+install(FILES data/mime/org.blissos.craunbd.xml
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/mime/packages
+)

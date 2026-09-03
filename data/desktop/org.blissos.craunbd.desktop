@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=Open with CrAU-NBD
+GenericName=OTA Partition Mounter
+Comment=Mount Android and ChromeOS OTA images directly via NBD without extraction
+Exec=crau-nbd-mount %f
+Icon=drive-harddisk
+Terminal=false
+Categories=System;Filesystem;
+MimeType=application/zip;application/octet-stream;application/x-crau-payload;
+StartupNotify=true
+Actions=Detach;
+
+[Desktop Action Detach]
+Name=Detach CrAU-NBD Devices
+Exec=crau-nbd-mount --detach
