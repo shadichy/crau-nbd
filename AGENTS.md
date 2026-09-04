@@ -217,4 +217,4 @@ makepkg -f
 6. **Maintain Multi-Platform CI/CD Compatibility**:
    - Ensure CMake configuration remains compatible with both `ubuntu-latest` (`glibc`) and `alpine:3.18` (`musl-static` with `-static`).
 7. **Keep Documentation & Downstream Tooling Synchronized**:
-   - When modifying CLI arguments, update `doc/crau-nbd.1`, `README.md`, `walkthrough.md`, `scripts/crau-nbd-mount.sh`, and downstream scripts like `/home/shadichy/Downloads/Compressed/get_arcvm_props.sh`.
+   - When modifying CLI arguments, update `doc/crau-nbd.1`, `README.md`, `walkthrough.md`, `scripts/crau-nbd-mount.sh`.

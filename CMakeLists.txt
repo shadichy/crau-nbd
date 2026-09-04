@@ -107,9 +107,6 @@ target_link_libraries(test_reader PRIVATE
     BZip2::BZip2
 )
 
-enable_testing()
-add_test(NAME test_reader COMMAND test_reader /home/shadichy/Downloads/lineage-21.0-20260331-UNOFFICIAL-x86_64_tv_go-signed.zip)
-
 # Installation targets conforming to GNU and FreeDesktop standards
 install(TARGETS crau-nbd
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
